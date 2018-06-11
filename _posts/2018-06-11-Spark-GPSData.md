@@ -7,7 +7,7 @@ tags: [Data mining, Spark]
 ---
 ## 数据集概述
 这里用一个自己设定的数量较小的数据集来进行数据集的简要表示，以 csv 格式进行存储。
-
+```
 +--------+----------+---+---+
 |driverId| timeStamp|lat|lon|
 +--------+----------+---+---+
@@ -27,38 +27,40 @@ tags: [Data mining, Spark]
 |    1001|1475283977| 22| 32|
 |    1002|1475283977| 24| 31|
 +--------+----------+---+---+
+```
 
 第一列代表司机的id；第二列代表记录司机位置时的时间，用时间戳进行表示；第三列和第四列分别表示司机在该时刻所处的维度和经度。
 
 ## Spark 处理过程
 启动spark-shell，并加载处理 csv 文件的包
-```
+```scala
 spark-shell --packages com.databricks:spark-csv_2.11:1.1.0
 ```
 在 spark shell 中加载数据集
-```
+```scala
 val sqlContext = new org.apache.spark.sql.SQLContext(sc)
 val df = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").load("GPS.csv")
 ```
 查看数据是否读入成功
-```
+```scala
 df.take(5)
 ```
 检查读入数据各列的格式
-```
+```scala
 df.printSchema()
 ```
 自定义一个函数来讲时间戳转换为具体的时间
-```
+```scala
  val transformTimeStamp = udf((s:String) => {val myformat = new SimpleDateFormat("yyyy-MM-dd HH:mmss"); myformat.setTimeZone(TimeZone.getTimeZone("GMT"+8)); val time = new Date(s.toLong * 1000L); myformat.format(time)})
 ```
 通过该函数对 df 的 timeStamp 列进行转换，将结果追加到一个名为time的列，并将结果保存到 df0 中
-```
+```scala
 val df0 = df.withColumn("time", transformTimeStamp(df("timeStamp")))
 ```
 输出 df0 的内容
-```
+```scala
 df0.show
+```
 ```
 +--------+----------+---+---+------------------+
 |driverId| timeStamp|lat|lon|              time|
@@ -79,19 +81,22 @@ df0.show
 |    1001|1475283977| 22| 32|2016-10-01 01:0617|
 |    1002|1475283977| 24| 31|2016-10-01 01:0617|
 +--------+----------+---+---+------------------+
+```
 
 因为 GPS 数据分析以小时为单位进行，所以自定义一个函数将 time 列中的日期和小时提取出来
-```
+```scala
 val getYearDateHourString = udf((s:String) => {val lastString = s.substring(0, s.indexOf(':')); lastString})
 ```
 因为各小时内的 GPS 轨迹需要按照时间顺序进行排列，所以需要自定义一个函数将 time 列中的分钟和秒提取出来
-```
+```scala
 val getMinutesSecondsString = udf((s:String) => {val lastString = s.substring(s.indexOf(':') + 1); lastString})
 ```
 应用上面提到的两个自定义函数，对df进行处理
-```
+```scala
 val df0 = df.withColumn("time", getYearDateHourString(transformTimeStamp(df("timeStamp"))))
 df0.show
+```
+
 ```
 +--------+----------+---+---+-------------+
 |driverId| timeStamp|lat|lon|         time|
@@ -113,8 +118,12 @@ df0.show
 |    1002|1475283977| 24| 31|2016-10-01 01|
 +--------+----------+---+---+-------------+
 ```
+
+```scala
 val df1 = df0.withColumn("minutesSeconds", getMinutesSecondsString(transformTimeStamp(df("timeStamp"))))
 df1.show
+```
+
 ```
 +--------+----------+---+---+-------------+--------------+
 |driverId| timeStamp|lat|lon|         time|minutesSeconds|
@@ -135,9 +144,10 @@ df1.show
 |    1001|1475283977| 22| 32|2016-10-01 01|          0617|
 |    1002|1475283977| 24| 31|2016-10-01 01|          0617|
 +--------+----------+---+---+-------------+--------------+
+```
 
 将最后一列从字符串格式转换为 int 格式
-```
+```scala
 def convertColumn(df: org.apache.spark.sql.DataFrame, name:String, newType:String) = {
      |   val df_1 = df.withColumnRenamed(name, "swap")
      |   df_1.withColumn(name, df_1.col("swap").cast(newType)).drop("swap")
@@ -145,6 +155,7 @@ def convertColumn(df: org.apache.spark.sql.DataFrame, name:String, newType:Strin
 
 val df2 = convertColumn(df1, "minutesSeconds", "int")
 df2.show
+```
 ```
 +--------+----------+---+---+-------------+--------------+
 |driverId| timeStamp|lat|lon|         time|minutesSeconds|
@@ -165,11 +176,13 @@ df2.show
 |    1001|1475283977| 22| 32|2016-10-01 01|           617|
 |    1002|1475283977| 24| 31|2016-10-01 01|           617|
 +--------+----------+---+---+-------------+--------------+
+```
 
 删除 timeStamp列
-```
+```scala
  val df3 = df2.drop("timeStamp")
  df3.show()
+```
 ```
 +--------+---+---+-------------+--------------+
 |driverId|lat|lon|         time|minutesSeconds|
@@ -190,19 +203,21 @@ df2.show
 |    1001| 22| 32|2016-10-01 01|           617|
 |    1002| 24| 31|2016-10-01 01|           617|
 +--------+---+---+-------------+--------------+
+```
 
 将 df3 保存为 RDD 格式，以方便进行 MapReduce
-```
+```scala
 val tmpRDD = df3.rdd.map(p=>(p(0) + "," + p(1) + "," + p(2) + "," + p(3) + ","  + p(4)))
 ```
 将 RDD 的每一行通过 , 进行切割
-```
+```scala
 val rdd1 = tmpRDD.map(line => line.split(","))
 ```
 将每一行切割后的结果分为 MapReduce 中的 key 和 value
-```
+```scala
 val rdd2 = rdd1.map(x => ((x(0), x(3), x(4)), (x(1),x(2))))
 rdd2.foreach(x=>{println(x)})
+```
 ```
 ((1000,2016-10-01 00,5357),(22,33))
 ((1001,2016-10-01 00,5357),(21,34))
@@ -219,11 +234,13 @@ rdd2.foreach(x=>{println(x)})
 ((1000,2016-10-01 01,617),(21,23))
 ((1001,2016-10-01 01,617),(22,32))
 ((1002,2016-10-01 01,617),(24,31))
+```
 
 得到以司机 id 和小时为 key，该小时内按顺序排列的 GPS 轨迹为 value 的 RDD
-```
+```scala
 val rdd3 = rdd2.sortByKey().map(x =>((x._1._1, x._1._2), x._2)).groupByKey().map(x=>(x._1._1 + ":" + x._1._2, x._2.toList))
 rdd3.foreach(x=>{println(x)})
+```
 ```
 (1001:2016-10-01 01,List((23,32), (22,32)))
 (1001:2016-10-01 00,List((21,34), (21,23), (21,30)))
@@ -231,5 +248,6 @@ rdd3.foreach(x=>{println(x)})
 (1002:2016-10-01 00,List((23,32), (22,32), (22,33)))
 (1002:2016-10-01 01,List((25,30), (24,31)))
 (1000:2016-10-01 00,List((22,33), (25,30), (24,31)))
+```
 
 ## 未完待续

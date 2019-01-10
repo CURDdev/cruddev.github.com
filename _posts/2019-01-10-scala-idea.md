@@ -14,6 +14,6 @@ tags: [Data mining, Spark, scala]
 
 当我打算直接在以前的 spark 实验代码基础上进行修改时，却发现在运行 demo 时 IntelliJ idea 显示无法加载 scala 主类。网上的大部分解决方法都是针对 sdk 的，而我的工程中 sdk 的设置是没有问题的。山重水复之时，发现我居然没有把 demo 所在的文件夹设置为 source 目录, 难怪文件夹图标都没有变为 source 目录中该有的图标形式。解决了这个问题后，demo 果然顺利跑起来了。
 
-![source](imgs/source.png)
+![source](https://github.com/cruddev/cruddev.github.io/blob/master/_posts/imgs/source.png)
 
-![source](imgs/source_dir.png)
+![source](https://github.com/cruddev/cruddev.github.io/blob/master/_posts/imgs/source_dir.png)

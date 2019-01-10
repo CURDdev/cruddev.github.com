@@ -2,8 +2,6 @@
 title: "在 IntelliJ IDEA 中运行 scala 无法加载主类的解决方法"
 tags: [Data mining, Spark, scala]
 ---
-## 在 IntelliJ IDEA 中运行 scala 无法加载主类的解决方法
-
 在科研任务的实验中，数据集中没有记录司机的接单距离，所以我们只好通过司机的 GPS 轨迹数据，来判断司机在接受一个订单时其所在的地理位置，进而获得他的接单距离。 
 
 在 GPS 轨迹数据中，主要包含精度，经纬度，时间戳，司机 id, 是否空闲，非空闲时的 order_request_id。该轨迹数据并不是很完善，具体表现为一个司机的 GPS 轨迹记录并不是像滴滴那样每隔几秒钟就记录一次，而是可能隔几秒，也可能隔几分钟才记录一次。在以前的实验中，我首先把司机空闲的数据记录过滤掉，再对每个司机非空闲情况下的 GPS 轨迹按照时间进行排序，进而就可以获得每个司机在非空闲时的第一条轨迹记录。最后，通过比对每条记录的 order_request_id，就可以大概得到每个司机的接单距离。
@@ -14,6 +12,6 @@ tags: [Data mining, Spark, scala]
 
 当我打算直接在以前的 spark 实验代码基础上进行修改时，却发现在运行 demo 时 IntelliJ idea 显示无法加载 scala 主类。网上的大部分解决方法都是针对 sdk 的，而我的工程中 sdk 的设置是没有问题的。山重水复之时，发现我居然没有把 demo 所在的文件夹设置为 source 目录, 难怪文件夹图标都没有变为 source 目录中该有的图标形式。解决了这个问题后，demo 果然顺利跑起来了。
 
-![source](https://github.com/cruddev/cruddev.github.io/blob/master/_posts/imgs/source.png)
+![source](https://raw.githubusercontent.com/cruddev/cruddev.github.io/master/_posts/imgs/source.png)
 
-![source](https://github.com/cruddev/cruddev.github.io/blob/master/_posts/imgs/source_dir.png)
+![source](https://raw.githubusercontent.com/cruddev/cruddev.github.io/master/_posts/imgs/source_dir.png)
